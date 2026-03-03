@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRC Methodology Flowchart</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f7f6f2;
+    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 40px 20px 60px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 0.06em;
+    margin-bottom: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .chart {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ── PHASES ── */
+  .phase-row {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    margin-bottom: 0;
+  }
+
+  .phase-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 12px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    border-radius: 4px 0 0 4px;
+  }
+
+  .phase-data    { background: #2d6a9f; }
+  .phase-quantum { background: #5a3e8a; }
+  .phase-class   { background: #2e7d5e; }
+  .phase-eval    { background: #8a4f2a; }
+
+  .phase-content {
+    flex: 1;
+    padding: 0;
+  }
+
+  /* ── CONNECTOR ── */
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    width: 100%;
+  }
+
+  .arrow svg { display: block; }
+
+  /* ── NODES ── */
+  .node-row {
+    display: flex;
+    gap: 10px;
+    padding: 10px 10px;
+    align-items: stretch;
+  }
+
+  .node {
+    flex: 1;
+    border-radius: 6px;
+    padding: 14px 16px;
+    position: relative;
+  }
+
+  .node-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .node-body {
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: #333;
+  }
+
+  .node-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    background: rgba(0,0,0,0.06);
+    border-left: 2px solid rgba(0,0,0,0.15);
+    padding: 6px 8px;
+    margin-top: 8px;
+    border-radius: 0 3px 3px 0;
+    line-height: 1.6;
+    color: #1a1a1a;
+    white-space: pre;
+  }
+
+  .node-tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+
+  /* Data phase */
+  .data-node { background: #deeaf5; border: 1px solid #b0cfe8; }
+  .data-node .node-title { color: #1a4a6e; }
+  .data-tag { background: #2d6a9f; color: #fff; }
+
+  /* Quantum phase */
+  .q-node { background: #ede8f5; border: 1px solid #c9b8e8; }
+  .q-node .node-title { color: #3a2060; }
+  .q-tag { background: #5a3e8a; color: #fff; }
+
+  /* Classical phase */
+  .c-node { background: #ddf0e8; border: 1px solid #a8d9c0; }
+  .c-node .node-title { color: #1a4a33; }
+  .c-tag { background: #2e7d5e; color: #fff; }
+
+  /* Eval phase */
+  .e-node { background: #f5e8db; border: 1px solid #e0c4a4; }
+  .e-node .node-title { color: #5a3010; }
+  .e-tag { background: #8a4f2a; color: #fff; }
+
+  /* Special: FROZEN badge */
+  .frozen-badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #5a3e8a;
+    border: 1.5px solid #5a3e8a;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .trainable-badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #2e7d5e;
+    border: 1.5px solid #2e7d5e;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* ── SPLIT/MERGE ── */
+  .split-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #888;
+    text-align: center;
+    padding: 2px 0 4px;
+  }
+
+  /* ── WIDE single node ── */
+  .node-wide {
+    width: 100%;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 0 10px;
+  }
+
+  /* ── CAPTION ── */
+  .caption {
+    max-width: 860px;
+    margin: 28px auto 0;
+    font-size: 11px;
+    color: #555;
+    line-height: 1.6;
+    border-top: 1px solid #ccc;
+    padding-top: 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  .caption strong { color: #1a1a1a; }
+
+  hr.phase-div {
+    border: none;
+    border-top: 1.5px dashed #ccc;
+    margin: 4px 0;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<h1>Quantum Reservoir Computing — Methodology</h1>
+<div class="subtitle">Swaption Vol Surface Forecasting · MerLin / PennyLane · Hybrid Quantum–Classical Pipeline</div>
+
+<div class="chart">
+
+  <!-- ════════════════════════════════
+       PHASE 1 — DATA
+  ════════════════════════════════ -->
+  <div class="phase-row">
+    <div class="phase-label phase-data">Data</div>
+    <div class="phase-content">
+      <div class="node-row">
+
+        <div class="node data-node">
+          <span class="node-tag data-tag">Input — Iris</span>
+          <div class="node-title">Iris Classification Dataset</div>
+          <div class="node-body">
+            150 samples · 4 features · 3 classes<br>
+            Standardised with <em>StandardScaler</em>, mapped to (0, π) via sigmoid scaling for angle embedding
+          </div>
+          <div class="node-code">X_scaled = 1/(1+exp(-X)) * π</div>
+        </div>
+
+        <div class="node data-node">
+          <span class="node-tag data-tag">Input — Swaptions</span>
+          <div class="node-title">Implied Vol Surface Dataset</div>
+          <div class="node-body">
+            494 training days · 224 vol values per day<br>
+            PCA compression: 224-dim → 6 latent scores<br>
+            Lag pairs: X[t] → y[t+1] (next-day forecasting)
+          </div>
+          <div class="node-code">scores = PCA(n=6).fit_transform(surface)
+X[t], y[t+1] = scores[:-1], scores[1:]</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="24" height="32"><path d="M12 0 L12 24 M5 17 L12 26 L19 17" stroke="#555" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <!-- ════════════════════════════════
+       PHASE 2 — QUANTUM RESERVOIR
+  ════════════════════════════════ -->
+  <div class="phase-row">
+    <div class="phase-label phase-quantum">Quantum Reservoir</div>
+    <div class="phase-content">
+
+      <div class="node-row">
+        <div class="node q-node" style="flex:1.1">
+          <span class="node-tag q-tag">PennyLane</span>
+          <div class="node-title">Qubit Encoding <span class="frozen-badge">frozen</span></div>
+          <div class="node-body">
+            4 qubits · RY angle embedding per feature<br>
+            Fixed random RY + RZ rotations as reservoir dynamics<br>
+            CNOT entanglement: (0→1), (2→3), (1→2), (3→0)
+          </div>
+          <div class="node-code">for i in range(n_qubits):
+    qml.RY(x[i], wires=i)      # encode
+qml.RY(w[i], wires=i)          # reservoir
+qml.CNOT(wires=[0,1])
+qml.CNOT(wires=[2,3])          # entangle</div>
+        </div>
+
+        <div class="node q-node" style="flex:1.1">
+          <span class="node-tag q-tag">MerLin</span>
+          <div class="node-title">Photonic Circuit <span class="frozen-badge">frozen</span></div>
+          <div class="node-body">
+            6 optical modes · 4 photons · Fock space C(10,4)=210<br>
+            Clements order per block: beam splitters → rotations → entangling (×2 alternating layers)<br>
+            Ensemble of 5 independent random reservoirs
+          </div>
+          <div class="node-code">builder.add_angle_encoding(name="enc")
+builder.add_superpositions(...)   # BS
+builder.add_rotations(...)        # phase
+builder.add_entangling_layer(...) # ent A
+builder.add_entangling_layer(...) # ent B</div>
+        </div>
+      </div>
+
+      <div class="node-row" style="padding-top:0">
+        <div class="node q-node" style="flex:2.3; background:#f5f0ff; border-color:#b09ad4">
+          <span class="node-tag q-tag">Measurement</span>
+          <div class="node-title">Feature Extraction</div>
+          <div class="node-body" style="display:flex; gap:32px">
+            <div>
+              <strong>PennyLane:</strong> PauliZ expectation values on each qubit → 4-dim feature vector<br>
+              <span style="font-family:IBM Plex Mono,monospace;font-size:9.5px">return [qml.expval(qml.PauliZ(i)) for i in range(n)]</span>
+            </div>
+            <div>
+              <strong>MerLin:</strong> Fock state probability distribution via <em>MeasurementStrategy.probs()</em> → 210-dim feature vector per reservoir → 1050-dim after ensemble
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="24" height="32"><path d="M12 0 L12 24 M5 17 L12 26 L19 17" stroke="#555" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <!-- ════════════════════════════════
+       PHASE 3 — CLASSICAL READOUT
+  ════════════════════════════════ -->
+  <div class="phase-row">
+    <div class="phase-label phase-class">Readout</div>
+    <div class="phase-content">
+      <div class="split-label">Two readout variants trained on quantum features</div>
+      <div class="node-row">
+
+        <div class="node c-node">
+          <span class="node-tag c-tag">Variant A</span>
+          <div class="node-title">Linear Readout <span class="trainable-badge">trained</span></div>
+          <div class="node-body">
+            Single linear layer on Fock features<br>
+            Iris: 4→3 (CrossEntropy) · Swaptions: 1050→6 (MSE)<br>
+            Convex optimisation · unique global minimum<br>
+            Canonical QRC architecture
+          </div>
+          <div class="node-code">nn.Linear(feat_dim, n_classes)
+optimizer = Adam(lr=0.01)</div>
+        </div>
+
+        <div class="node c-node">
+          <span class="node-tag c-tag">Variant B</span>
+          <div class="node-title">MLP Readout <span class="trainable-badge">trained</span></div>
+          <div class="node-body">
+            Two hidden layers on Fock features<br>
+            Iris: feat→64→3 · Swaptions: feat→128→64→6<br>
+            Used to diagnose whether linear readout is sufficient — if Linear ≈ MLP, the reservoir is doing the nonlinear work
+          </div>
+          <div class="node-code">nn.Linear(feat, 128) → ReLU
+nn.Linear(128, 64)  → ReLU
+nn.Linear(64, out)</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="24" height="32"><path d="M12 0 L12 24 M5 17 L12 26 L19 17" stroke="#555" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <!-- ════════════════════════════════
+       PHASE 4 — EVALUATION
+  ════════════════════════════════ -->
+  <div class="phase-row">
+    <div class="phase-label phase-eval">Evaluation</div>
+    <div class="phase-content">
+      <div class="node-row">
+
+        <div class="node e-node">
+          <span class="node-tag e-tag">Classical Baselines</span>
+          <div class="node-title">Ablation Suite</div>
+          <div class="node-body">
+            <strong>Persistence</strong> — predict tomorrow = today<br>
+            <strong>Ridge / LogReg</strong> — classical linear on PCA scores<br>
+            <strong>Classical MLP</strong> — nonlinear on PCA scores<br>
+            <strong>Random Projection</strong> — sanity check vs noise
+          </div>
+        </div>
+
+        <div class="node e-node">
+          <span class="node-tag e-tag">QRC Ablation</span>
+          <div class="node-title">Reservoir Improvement Study</div>
+          <div class="node-body">
+            <strong>D</strong> — basic (4 modes, 3 photons, 1 ent layer)<br>
+            <strong>E</strong> — +photons (4m, 4ph)<br>
+            <strong>F</strong> — +modes (6m, 4ph)<br>
+            <strong>G</strong> — +entangle (double alternating layers)<br>
+            <strong>H</strong> — +ensemble (5 independent reservoirs)
+          </div>
+        </div>
+
+        <div class="node e-node">
+          <span class="node-tag e-tag">Metrics</span>
+          <div class="node-title">Performance Measures</div>
+          <div class="node-body">
+            <strong>Iris:</strong> Classification accuracy<br>
+            <strong>Swaptions:</strong> RMSE and R² on reconstructed vol surface<br><br>
+            Key diagnostic: <em>Linear ≈ MLP gap</em><br>
+            → if gap &lt; 0.03, reservoir is doing the nonlinear work
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- end chart -->
+
+<div class="caption">
+  <strong>Figure 1 — QRC Methodology Pipeline.</strong>
+  The pipeline has four stages. (1) <strong>Data:</strong> the Iris dataset is standardised and angle-encoded; the Swaptions volatility surface is compressed from 224 dimensions to 6 PCA latent scores and arranged as next-day lag pairs. (2) <strong>Quantum Reservoir:</strong> inputs are encoded into a fixed random quantum circuit — a qubit circuit in PennyLane or a photonic circuit in MerLin — whose weights are never updated. The circuit generates a high-dimensional feature vector through quantum interference and entanglement (PauliZ expectation values for PennyLane; Fock state probabilities for MerLin). (3) <strong>Classical Readout:</strong> a linear layer or small MLP is trained on the quantum features using standard gradient descent; the quantum circuit is not involved in this stage. (4) <strong>Evaluation:</strong> QRC variants are compared against classical baselines and against each other through a systematic ablation isolating the effect of photon number, mode count, entanglement depth, and reservoir ensembling.
+</div>
+
+</body>
+</html>

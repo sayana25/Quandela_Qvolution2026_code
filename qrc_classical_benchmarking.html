@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classical Benchmarking</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #f7f6f2;
+    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 40px 20px 60px;
+  }
+
+  h1 {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin-bottom: 5px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    letter-spacing: 0.06em;
+    margin-bottom: 36px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── TOP STRIP: shared input ── */
+  .input-strip {
+    max-width: 900px;
+    margin: 0 auto 0;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .input-box {
+    flex: 1;
+    max-width: 380px;
+    background: #deeaf5;
+    border: 1.5px solid #9fc3e0;
+    border-radius: 6px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  .input-box .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    background: #2d6a9f;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 7px;
+  }
+
+  .input-box .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a3a5c;
+    margin-bottom: 4px;
+  }
+
+  .input-box .body {
+    font-size: 10.5px;
+    color: #2a4a6a;
+    line-height: 1.5;
+  }
+
+  /* ── ARROW ── */
+  .arrow-down {
+    display: flex;
+    justify-content: center;
+    height: 30px;
+    align-items: center;
+  }
+
+  .arrow-down svg { display: block; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    max-width: 900px;
+    margin: 0 auto 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 4px;
+  }
+
+  .section-line { flex: 1; height: 1.5px; }
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 12px;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  /* Iris colours */
+  .iris-line { background: #c0a0e0; }
+  .iris-label { background: #5a3e8a; color: #fff; }
+  /* Swaptions colours */
+  .swap-line { background: #f0c080; }
+  .swap-label { background: #8a5a10; color: #fff; }
+
+  /* ── BASELINE GRID ── */
+  .baseline-grid {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+    padding: 10px 4px;
+    align-items: stretch;
+  }
+
+  /* ── BASELINE CARD ── */
+  .card {
+    flex: 1;
+    border-radius: 6px;
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+
+  .card-number {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    opacity: 0.12;
+    color: #000;
+  }
+
+  .card-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    display: inline-block;
+    width: fit-content;
+  }
+
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.3;
+  }
+
+  .card-body {
+    font-size: 10.5px;
+    color: #333;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .card-purpose {
+    font-size: 9.5px;
+    font-style: italic;
+    color: #555;
+    border-top: 1px dashed #ccc;
+    padding-top: 5px;
+    line-height: 1.45;
+  }
+
+  .card-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    background: rgba(0,0,0,0.05);
+    border-left: 2px solid rgba(0,0,0,0.15);
+    padding: 5px 7px;
+    border-radius: 0 3px 3px 0;
+    white-space: pre;
+    line-height: 1.55;
+  }
+
+  /* card colour themes */
+  .card-naive   { background: #e8eaed; border: 1px solid #c0c4cc; }
+  .card-linear  { background: #ddf0e8; border: 1px solid #a8d9c0; }
+  .card-linear .card-tag  { background: #2e7d5e; color: #fff; }
+  .card-nonlin  { background: #fff3dd; border: 1px solid #e8c88a; }
+  .card-nonlin .card-tag  { background: #8a5a10; color: #fff; }
+  .card-random  { background: #fde8e8; border: 1px solid #e8aaaa; }
+  .card-random .card-tag  { background: #8a2020; color: #fff; }
+  .card-naive .card-tag   { background: #555; color: #fff; }
+
+  /* ── METRIC ROW ── */
+  .metric-strip {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+    padding: 4px 4px 0;
+  }
+
+  .metric-box {
+    flex: 1;
+    border-radius: 6px;
+    padding: 11px 14px;
+    text-align: center;
+  }
+
+  .metric-iris { background: #ede8f5; border: 1px solid #c9b8e8; }
+  .metric-swap { background: #fdf0e0; border: 1px solid #e8c890; }
+
+  .metric-box .m-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 5px;
+  }
+
+  .metric-box .m-metric {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.6;
+  }
+
+  /* ── DIAGNOSTIC BOX ── */
+  .diagnostic {
+    max-width: 900px;
+    margin: 10px auto 0;
+    background: #f0f4ff;
+    border: 1.5px solid #a0b4e8;
+    border-radius: 6px;
+    padding: 13px 18px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .diag-icon {
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .diag-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a3070;
+    margin-bottom: 5px;
+  }
+
+  .diag-body {
+    font-size: 11px;
+    color: #2a3a60;
+    line-height: 1.6;
+  }
+
+  .diag-body code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    background: #dde4f8;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* ── CAPTION ── */
+  .caption {
+    max-width: 900px;
+    margin: 24px auto 0;
+    font-size: 11px;
+    color: #555;
+    line-height: 1.6;
+    border-top: 1px solid #ccc;
+    padding-top: 14px;
+  }
+
+  .caption strong { color: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<h1>Classical Benchmarking Strategy</h1>
+<div class="subtitle">Four baselines across two datasets · Iris (classification) · Swaptions (regression)</div>
+
+<!-- ── INPUTS ── -->
+<div class="input-strip">
+  <div class="input-box">
+    <span class="tag">Iris</span>
+    <div class="title">4 features · 3 classes</div>
+    <div class="body">StandardScaler → sigmoid → (0, π)<br>80/20 train–test split · stratified</div>
+  </div>
+  <div class="input-box">
+    <span class="tag">Swaptions</span>
+    <div class="title">224-dim vol surface · 494 days</div>
+    <div class="body">PCA → 6 latent scores · StandardScaler<br>Lag pairs X[t] → y[t+1] · NaN imputation</div>
+  </div>
+</div>
+
+<div class="arrow-down">
+  <svg width="24" height="30"><path d="M12 0 L12 22 M5 15 L12 24 L19 15" stroke="#777" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+</div>
+
+<!-- ── IRIS BASELINES ── -->
+<div class="section-header">
+  <div class="section-line iris-line"></div>
+  <div class="section-label iris-label">Iris — Classification Baselines</div>
+  <div class="section-line iris-line"></div>
+</div>
+
+<div class="baseline-grid">
+
+  <div class="card card-naive">
+    <div class="card-number">1</div>
+    <span class="card-tag">Naive</span>
+    <div class="card-title">Logistic Regression</div>
+    <div class="card-body">
+      Linear classifier on raw 4-dim features.<br>
+      Trained with L2 regularisation.
+    </div>
+    <div class="card-code">LogisticRegression(
+  max_iter=1000)</div>
+    <div class="card-purpose">Classical linear ceiling. Sets the minimum bar the QRC must clear.</div>
+  </div>
+
+  <div class="card card-nonlin">
+    <div class="card-number">2</div>
+    <span class="card-tag">Nonlinear</span>
+    <div class="card-title">Classical MLP</div>
+    <div class="card-body">
+      Two-layer network on raw features.<br>
+      Architecture: 4 → 64 → 3
+    </div>
+    <div class="card-code">Linear(4,64) → ReLU
+Dropout(0.2)
+Linear(64,3)</div>
+    <div class="card-purpose">Upper bound for classical models. If QRC ≈ MLP, the reservoir is competitive.</div>
+  </div>
+
+  <div class="card card-random">
+    <div class="card-number">3</div>
+    <span class="card-tag">Sanity check</span>
+    <div class="card-title">Random Projection + Linear</div>
+    <div class="card-body">
+      Gaussian random matrix maps raw features to the same dimension as the QRC output. Linear readout trained on top.
+    </div>
+    <div class="card-code">W ~ N(0,1), shape (4, feat_dim)
+X_rand = X @ W
+Linear(feat_dim, 3)</div>
+    <div class="card-purpose">If QRC ≈ Random Projection, the circuit structure adds nothing beyond noise.</div>
+  </div>
+
+  <div class="card card-linear">
+    <div class="card-number">4</div>
+    <span class="card-tag">Dimensionality</span>
+    <div class="card-title">PCA Features + Linear</div>
+    <div class="card-body">
+      PCA reduces features to the same dimensionality as QRC output. Linear readout trained on PCA scores.
+    </div>
+    <div class="card-code">PCA(n_components=feat_dim)
+  .fit_transform(X)
+Linear(feat_dim, 3)</div>
+    <div class="card-purpose">Isolates whether QRC adds value beyond classical dimensionality reduction.</div>
+  </div>
+
+</div>
+
+<div class="arrow-down">
+  <svg width="24" height="30"><path d="M12 0 L12 22 M5 15 L12 24 L19 15" stroke="#777" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+</div>
+
+<!-- ── SWAPTIONS BASELINES ── -->
+<div class="section-header">
+  <div class="section-line swap-line"></div>
+  <div class="section-label swap-label">Swaptions — Regression Baselines</div>
+  <div class="section-line swap-line"></div>
+</div>
+
+<div class="baseline-grid">
+
+  <div class="card card-naive">
+    <div class="card-number">1</div>
+    <span class="card-tag">Naive</span>
+    <div class="card-title">Persistence Baseline</div>
+    <div class="card-body">
+      Predicts tomorrow's vol surface = today's. No model required. Exploits the high autocorrelation of financial time series.
+    </div>
+    <div class="card-code">y_pred[t+1] = y[t]</div>
+    <div class="card-purpose">Hardest baseline to beat on near-stationary financial data. Any model must outperform this.</div>
+  </div>
+
+  <div class="card card-linear">
+    <div class="card-number">2</div>
+    <span class="card-tag">Linear</span>
+    <div class="card-title">Ridge Regression</div>
+    <div class="card-body">
+      Linear regression with L2 regularisation on 6 PCA latent scores. Predicts next-day scores directly.
+    </div>
+    <div class="card-code">Ridge(alpha=1.0).fit(
+  scores[:-1], scores[1:])</div>
+    <div class="card-purpose">Classical linear baseline on compressed features. The primary reference point for QRC comparison.</div>
+  </div>
+
+  <div class="card card-nonlin">
+    <div class="card-number">3</div>
+    <span class="card-tag">Nonlinear</span>
+    <div class="card-title">Classical MLP</div>
+    <div class="card-body">
+      Three-layer network on 6 PCA scores.<br>
+      Architecture: 6 → 128 → 64 → 6
+    </div>
+    <div class="card-code">Linear(6,128) → ReLU
+Linear(128,64) → ReLU
+Linear(64,6)</div>
+    <div class="card-purpose">Tests whether any nonlinear model can improve on Ridge. Sets the classical nonlinear ceiling.</div>
+  </div>
+
+  <div class="card card-random">
+    <div class="card-number">4</div>
+    <span class="card-tag">Sanity check</span>
+    <div class="card-title">Random Projection + Linear</div>
+    <div class="card-body">
+      Gaussian random matrix maps 6 PCA scores to the same Fock dimension as the QRC. Linear readout on top.
+    </div>
+    <div class="card-code">W ~ N(0,1), shape (6, fock_dim)
+X_rand = scores @ W
+Linear(fock_dim, 6)</div>
+    <div class="card-purpose">If QRC ≈ this, the quantum circuit structure contributes nothing over random noise.</div>
+  </div>
+
+</div>
+
+<div class="arrow-down">
+  <svg width="24" height="30"><path d="M12 0 L12 22 M5 15 L12 24 L19 15" stroke="#777" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+</div>
+
+<!-- ── METRICS ── -->
+<div class="section-header" style="margin-bottom:8px">
+  <div class="section-line" style="background:#aaa"></div>
+  <div class="section-label" style="background:#333;color:#fff">Evaluation Metrics</div>
+  <div class="section-line" style="background:#aaa"></div>
+</div>
+
+<div class="metric-strip">
+  <div class="metric-box metric-iris">
+    <div class="m-label">Iris · Classification</div>
+    <div class="m-metric">
+      Accuracy<br>
+      Precision · Recall (macro)<br>
+      Confusion Matrix
+    </div>
+  </div>
+  <div class="metric-box metric-swap">
+    <div class="m-label">Swaptions · Regression</div>
+    <div class="m-metric">
+      RMSE on reconstructed vol surface<br>
+      R² on reconstructed vol surface<br>
+      MAE · time-series cell comparison
+    </div>
+  </div>
+</div>
+
+<!-- ── DIAGNOSTIC ── -->
+<div class="diagnostic">
+  <div class="diag-icon">🔍</div>
+  <div>
+    <div class="diag-title">Key Diagnostic: Linear vs MLP Readout Gap</div>
+    <div class="diag-body">
+      For all QRC variants, both a linear readout and an MLP readout are evaluated on the same frozen reservoir features.
+      If <code>|Acc(MLP) − Acc(Linear)| &lt; 0.03</code> (Iris) or <code>|RMSE(MLP) − RMSE(Linear)| &lt; 0.001</code> (Swaptions),
+      the reservoir is judged to be doing the nonlinear work and the linear readout is sufficient —
+      which is the theoretically desirable outcome for QRC.
+      A large gap indicates that the reservoir features are not rich enough and the MLP is compensating classically.
+    </div>
+  </div>
+</div>
+
+<!-- ── CAPTION ── -->
+<div class="caption">
+  <strong>Figure 2 — Classical Benchmarking Strategy.</strong>
+  Four classical baselines are applied to both datasets. The <em>naive baseline</em> (Logistic Regression / Persistence) establishes the minimum the QRC must beat. The <em>linear baseline</em> (Logistic Regression / Ridge) tests whether nonlinearity is needed at all. The <em>nonlinear baseline</em> (Classical MLP) provides the classical performance ceiling. The <em>random projection baseline</em> is the critical sanity check: if QRC performance matches a random Gaussian projection of the same output dimension, the quantum circuit structure contributes nothing. All baselines are evaluated using the same metrics as the QRC models — accuracy for Iris and RMSE / R² for Swaptions — enabling direct comparison.
+</div>
+
+</body>
+</html>

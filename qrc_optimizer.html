@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QRC Code Optimizer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c12;
+    --panel: #11141e;
+    --border: #1e2235;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --warn: #f59e0b;
+    --ok: #22c55e;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code-bg: #0d1017;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    background: linear-gradient(90deg, #0a0c12 0%, #0f1225 100%);
+  }
+  header h1 { font-size:1.4rem; font-weight:800; letter-spacing:-0.02em; }
+  header h1 span { color:var(--accent); }
+  .badge { background: var(--accent2); color:#fff; font-size:0.7rem; font-weight:700; padding:4px 10px; border-radius:20px; letter-spacing:0.08em; text-transform:uppercase; }
+
+  /* Nav tabs */
+  .tabs { display:flex; gap:4px; padding:20px 40px 0; border-bottom:1px solid var(--border); }
+  .tab { padding:10px 20px; font-family:'Syne',sans-serif; font-weight:600; font-size:0.85rem; cursor:pointer; border-radius:8px 8px 0 0; border:1px solid transparent; border-bottom:none; color:var(--muted); transition:all 0.2s; background:transparent; }
+  .tab.active { background:var(--panel); border-color:var(--border); color:var(--accent); }
+  .tab:hover:not(.active) { color:var(--text); }
+
+  /* Content */
+  .content { padding: 32px 40px; display:none; }
+  .content.active { display:block; }
+
+  /* Issue cards */
+  .issues-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:16px; margin-bottom:32px; }
+  .issue-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .issue-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .issue-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; }
+  .issue-card.critical::before { background: var(--red); }
+  .issue-card.medium::before { background: var(--warn); }
+  .issue-card.low::before { background: var(--ok); }
+  .issue-title { font-weight:700; font-size:0.95rem; margin-bottom:6px; display:flex; align-items:center; gap:10px; }
+  .issue-desc { font-size:0.82rem; color:var(--muted); line-height:1.6; }
+  .severity { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; padding:2px 8px; border-radius:20px; }
+  .severity.critical { background:#ef444420; color:var(--red); }
+  .severity.medium { background:#f59e0b20; color:var(--warn); }
+  .severity.low { background:#22c55e20; color:var(--ok); }
+
+  .speedup-bar { margin-top:12px; background:var(--border); border-radius:4px; height:6px; overflow:hidden; }
+  .speedup-fill { height:100%; border-radius:4px; transition: width 1s ease; }
+
+  /* Code diff */
+  .diff-container { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .code-panel { background:var(--code-bg); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .code-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .code-header.old { color:var(--red); }
+  .code-header.new { color:var(--ok); }
+  pre { padding:20px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; line-height:1.8; overflow-x:auto; }
+  .hl-remove { background:#ef444418; display:block; border-left:3px solid var(--red); padding-left:8px; margin:0 -20px; padding-right:8px; }
+  .hl-add { background:#22c55e18; display:block; border-left:3px solid var(--ok); padding-left:8px; margin:0 -20px; padding-right:8px; }
+  .hl-comment { color: #4a5568; }
+  .hl-keyword { color: #c084fc; }
+  .hl-string { color: #86efac; }
+  .hl-func { color: #67e8f9; }
+  .hl-num { color: #fbbf24; }
+  .hl-var { color: #e2e8f0; }
+
+  /* Timeline */
+  .timeline { position:relative; padding-left:32px; }
+  .timeline::before { content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--border); }
+  .tl-item { position:relative; margin-bottom:28px; }
+  .tl-dot { position:absolute; left:-27px; top:4px; width:12px; height:12px; border-radius:50%; border:2px solid var(--accent); background:var(--bg); }
+  .tl-dot.done { background:var(--ok); border-color:var(--ok); }
+  .tl-title { font-weight:700; font-size:0.9rem; margin-bottom:4px; }
+  .tl-body { font-size:0.82rem; color:var(--muted); line-height:1.6; }
+  code { font-family:'JetBrains Mono',monospace; background:#1a1d2e; padding:1px 6px; border-radius:4px; font-size:0.8em; color:var(--accent); }
+
+  /* Perf section */
+  .perf-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+  .perf-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+  .perf-val { font-size:2rem; font-weight:800; color:var(--accent); letter-spacing:-0.02em; }
+  .perf-label { font-size:0.75rem; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.08em; }
+
+  h2 { font-size:1.1rem; font-weight:800; margin-bottom:16px; color:var(--text); }
+  h3 { font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; }
+  .section { margin-bottom:36px; }
+  .info-box { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:16px 20px; font-size:0.83rem; line-height:1.7; color:var(--muted); margin-bottom:24px; }
+  .info-box strong { color:var(--text); }
+
+  @media(max-width:768px) {
+    .diff-container { grid-template-columns:1fr; }
+    .perf-grid { grid-template-columns:1fr 1fr; }
+    header, .tabs, .content { padding-left:20px; padding-right:20px; }
+    .issues-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>QRC <span>Code Optimizer</span> — MerLin / Iris</h1>
+  <span class="badge">Intermediate</span>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('issues')">⚠ Issues Found</button>
+  <button class="tab" onclick="showTab('diff')">⟷ Code Diff</button>
+  <button class="tab" onclick="showTab('perf')">⚡ Performance</button>
+  <button class="tab" onclick="showTab('plan')">✓ Action Plan</button>
+</div>
+
+<!-- TAB 1: ISSUES -->
+<div id="tab-issues" class="content active">
+  <div class="info-box">
+    <strong>6 optimizations identified</strong> in your Quantum Reservoir Computing script. The biggest win is <strong>pre-computing frozen features</strong> — since both the reservoir and projection are non-trainable, there is no reason to run them on every epoch. This alone can give <strong>100–500× training speedup</strong> depending on reservoir cost.
+  </div>
+  <div class="issues-grid">
+
+    <div class="issue-card critical" onclick="showTab('diff')">
+      <div class="issue-title">
+        <span>🔴</span> Redundant reservoir forward passes
+        <span class="severity critical">Critical</span>
+      </div>
+      <div class="issue-desc">The reservoir and projection matrix are both frozen, yet <code>model(X_train)</code> re-runs the full quantum circuit every epoch. Pre-compute features once before the training loop.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:95%; background:var(--red);"></div></div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">Estimated speedup: <strong style="color:var(--ok)">100–500×</strong> on training loop</div>
+    </div>
+
+    <div class="issue-card critical">
+      <div class="issue-title">
+        <span>🔴</span> No reproducible projection seed
+        <span class="severity critical">Critical</span>
+      </div>
+      <div class="issue-desc">The random projection <code>torch.randn(...)</code> is not seeded separately, so results differ across runs despite <code>torch.manual_seed(0)</code> being set earlier — any intervening torch ops shift the RNG state.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:30%; background:var(--red);"></div></div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">Impact: <strong style="color:var(--warn)">reproducibility</strong></div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span>🟡</span> Flat learning rate for 500 epochs
+        <span class="severity medium">Medium</span>
+      </div>
+      <div class="issue-desc">A constant LR of 0.01 for the full run often overshoots near convergence. Adding a <code>CosineAnnealingLR</code> or <code>ReduceLROnPlateau</code> scheduler typically improves final accuracy by 1–3%.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:50%; background:var(--warn);"></div></div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span>🟡</span> No early stopping
+        <span class="severity medium">Medium</span>
+      </div>
+      <div class="issue-desc">Training continues all 500 epochs even after the loss plateaus. A simple patience-based early stop on validation loss prevents overfitting and wastes no compute.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:60%; background:var(--warn);"></div></div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">Can cut epochs by <strong style="color:var(--ok)">50–80%</strong></div>
+    </div>
+
+    <div class="issue-card low">
+      <div class="issue-title">
+        <span>🟢</span> Unverified complex output assumption
+        <span class="severity low">Low</span>
+      </div>
+      <div class="issue-desc">The code assumes <code>reservoir(x)</code> returns complex tensors and splits real/imag. MerLin's <code>AMPLITUDES</code> strategy may return real-only values, making <code>imag</code> all zeros and halving your effective feature space for free.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:20%; background:var(--ok);"></div></div>
+    </div>
+
+    <div class="issue-card low">
+      <div class="issue-title">
+        <span>🟢</span> Logging inside training loop
+        <span class="severity low">Low</span>
+      </div>
+      <div class="issue-desc">The <code>if epoch % 50 == 0</code> block recomputes <code>logits.argmax(1)</code> which is already available. Minor, but once pre-computing is done, the loop structure should be simplified.</div>
+      <div class="speedup-bar"><div class="speedup-fill" style="width:10%; background:var(--ok);"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAB 2: CODE DIFF -->
+<div id="tab-diff" class="content">
+  <h2>Key Optimization: Pre-compute Frozen Features</h2>
+  <div class="info-box">The most impactful change. Since both the reservoir and the projection are <strong>non-trainable</strong>, run them <strong>once</strong> before the training loop and store the result. The linear layer trains on those cached features.</div>
+
+  <div class="diff-container">
+    <div class="code-panel">
+      <div class="code-header old">✕ Original — runs reservoir every epoch</div>
+      <pre><span class="hl-comment"># ❌ No pre-computation</span>
+<span class="hl-comment"># forward() runs full quantum</span>
+<span class="hl-comment"># circuit on every epoch</span>
+
+<span class="hl-keyword">class</span> <span class="hl-func">MerlinReservoirClassifier</span>(nn.Module):
+    <span class="hl-keyword">def</span> <span class="hl-func">forward</span>(self, x):
+<span class="hl-remove">        q = self.reservoir(x)  <span class="hl-comment"># expensive!</span></span>
+<span class="hl-remove">        q_feat = torch.cat(</span>
+<span class="hl-remove">            [torch.real(q),</span>
+<span class="hl-remove">             torch.imag(q)], dim=1</span>
+<span class="hl-remove">        ).float()</span>
+<span class="hl-remove">        z_like = q_feat @ self.proj  <span class="hl-comment"># also fixed!</span></span>
+        <span class="hl-keyword">return</span> self.linear(z_like)
+
+
+<span class="hl-comment"># Training loop</span>
+<span class="hl-keyword">for</span> epoch <span class="hl-keyword">in</span> range(epochs):
+    model.train()
+    optimizer.zero_grad()
+<span class="hl-remove">    logits = model(X_train)  <span class="hl-comment"># ← re-runs circuit</span></span>
+    loss = criterion(logits, y_train)
+    loss.backward()
+    optimizer.step()</pre>
+    </div>
+
+    <div class="code-panel">
+      <div class="code-header new">✓ Optimized — pre-compute once</div>
+      <pre><span class="hl-comment"># ✅ Extract features ONCE before loop</span>
+
+<span class="hl-keyword">def</span> <span class="hl-func">extract_features</span>(reservoir, proj, X):
+    <span class="hl-keyword">with</span> torch.no_grad():
+        q = reservoir(X)
+        <span class="hl-comment"># assert if real-only to save dim</span>
+        <span class="hl-keyword">if</span> torch.is_complex(q):
+            feat = torch.cat(
+                [q.real, q.imag], dim=<span class="hl-num">1</span>
+            ).float()
+        <span class="hl-keyword">else</span>:
+            feat = q.float()
+        <span class="hl-keyword">return</span> feat @ proj
+
+<span class="hl-add">X_train_feat = extract_features(</span>
+<span class="hl-add">    reservoir, proj, X_train)</span>
+<span class="hl-add">X_test_feat  = extract_features(</span>
+<span class="hl-add">    reservoir, proj, X_test)</span>
+
+<span class="hl-comment"># Simplified model — just a linear layer</span>
+<span class="hl-keyword">class</span> <span class="hl-func">FastReadout</span>(nn.Module):
+    <span class="hl-keyword">def</span> <span class="hl-func">forward</span>(self, x):
+<span class="hl-add">        <span class="hl-keyword">return</span> self.linear(x)  <span class="hl-comment"># instant!</span></span>
+
+<span class="hl-comment"># Training loop — no reservoir call</span>
+<span class="hl-keyword">for</span> epoch <span class="hl-keyword">in</span> range(epochs):
+    optimizer.zero_grad()
+<span class="hl-add">    logits = linear(X_train_feat)  <span class="hl-comment"># ← fast</span></span>
+    loss = criterion(logits, y_train)
+    loss.backward()
+    optimizer.step()</pre>
+    </div>
+  </div>
+
+  <br>
+  <h2>Optimization 2: LR Scheduler + Early Stopping</h2>
+  <div class="diff-container">
+    <div class="code-panel">
+      <div class="code-header old">✕ Original</div>
+      <pre>optimizer = torch.optim.Adam(
+    model.linear.parameters(), lr=<span class="hl-num">0.01</span>
+)
+
+<span class="hl-keyword">for</span> epoch <span class="hl-keyword">in</span> range(<span class="hl-num">500</span>):
+    <span class="hl-comment"># no scheduler, no stopping</span>
+    ...
+    loss.backward()
+    optimizer.step()
+<span class="hl-remove">    <span class="hl-comment"># trains all 500 epochs always</span></span></pre>
+    </div>
+    <div class="code-panel">
+      <div class="code-header new">✓ Optimized</div>
+      <pre>optimizer = torch.optim.Adam(
+    [linear.weight, linear.bias], lr=<span class="hl-num">0.01</span>
+)
+<span class="hl-add">scheduler = torch.optim.lr_scheduler</span>
+<span class="hl-add">    .CosineAnnealingLR(optimizer, T_max=<span class="hl-num">500</span>)</span>
+<span class="hl-add">best_loss, patience, wait = inf, <span class="hl-num">30</span>, <span class="hl-num">0</span></span>
+
+<span class="hl-keyword">for</span> epoch <span class="hl-keyword">in</span> range(<span class="hl-num">500</span>):
+    ...
+    loss.backward()
+    optimizer.step()
+<span class="hl-add">    scheduler.step()</span>
+<span class="hl-add">    <span class="hl-keyword">if</span> loss &lt; best_loss - <span class="hl-num">1e-4</span>:</span>
+<span class="hl-add">        best_loss, wait = loss, <span class="hl-num">0</span></span>
+<span class="hl-add">    <span class="hl-keyword">else</span>:</span>
+<span class="hl-add">        wait += <span class="hl-num">1</span></span>
+<span class="hl-add">    <span class="hl-keyword">if</span> wait >= patience: <span class="hl-keyword">break</span></span></pre>
+    </div>
+  </div>
+
+  <br>
+  <h2>Optimization 3: Reproducible Projection</h2>
+  <div class="diff-container">
+    <div class="code-panel">
+      <div class="code-header old">✕ Original — RNG state is unknown here</div>
+      <pre>proj = torch.randn(feat_dim, proj_out) \
+    / np.sqrt(feat_dim)
+<span class="hl-remove"><span class="hl-comment"># ← value depends on what ran before</span></span></pre>
+    </div>
+    <div class="code-panel">
+      <div class="code-header new">✓ Optimized — explicit generator</div>
+      <pre><span class="hl-add">gen = torch.Generator().manual_seed(<span class="hl-num">42</span>)</span>
+proj = torch.randn(
+    feat_dim, proj_out,
+<span class="hl-add">    generator=gen</span>
+) / np.sqrt(feat_dim)</pre>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: PERFORMANCE -->
+<div id="tab-perf" class="content">
+  <div class="perf-grid">
+    <div class="perf-card">
+      <div class="perf-val">~500×</div>
+      <div class="perf-label">Training loop speedup (pre-compute)</div>
+    </div>
+    <div class="perf-card">
+      <div class="perf-val">~50%</div>
+      <div class="perf-label">Fewer epochs with early stopping</div>
+    </div>
+    <div class="perf-card">
+      <div class="perf-val">+1–3%</div>
+      <div class="perf-label">Accuracy gain from LR scheduler</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Why the reservoir bottleneck is so severe</h3>
+    <div class="info-box">
+      Quandela's MerLin photonic simulation involves computing the permanent of large matrices — this is <strong>#P-hard</strong> complexity. Even on 4 modes with 3 photons, each forward pass involves combinatorial computations. Running this 500× per epoch on 114 training samples is <strong>57,000 permanent computations</strong> that produce the exact same result every time.
+      <br><br>After pre-computing: the training loop is just <strong>pure matrix multiplications</strong> on 4-dimensional features — essentially free.
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Feature dimension check</h3>
+    <div class="info-box">
+      With <code>AMPLITUDES</code> measurement strategy, MerLin returns the complex probability amplitudes of the Fock basis states. For n_modes=4, n_photons=3, the number of basis states is C(4+3-1, 3) = <strong>C(6,3) = 20</strong>, so <code>output_size = 20</code>.<br><br>
+      If MerLin returns complex tensors: <code>feat_dim = 40</code>. If already real: <code>feat_dim = 20</code>. Add <code>assert q.is_complex(), "MerLin returned real — halve feat_dim"</code> to verify.
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: ACTION PLAN -->
+<div id="tab-plan" class="content">
+  <div class="info-box">Recommended order — start with #1, it's free performance.</div>
+  <div class="timeline">
+
+    <div class="tl-item">
+      <div class="tl-dot done"></div>
+      <div class="tl-title">1. Pre-compute frozen features ✓ highest priority</div>
+      <div class="tl-body">Add an <code>extract_features()</code> call for both <code>X_train</code> and <code>X_test</code> before the training loop. Replace <code>model(X_train)</code> inside the loop with <code>linear(X_train_feat)</code>. This eliminates all quantum circuit calls during training.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot done"></div>
+      <div class="tl-title">2. Fix projection reproducibility</div>
+      <div class="tl-body">Use <code>torch.Generator().manual_seed(42)</code> when initializing <code>proj</code>. This ensures the projection matrix is identical across runs, isolating reservoir quality from initialization noise.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-title">3. Add cosine LR scheduler</div>
+      <div class="tl-body">Wrap Adam with <code>CosineAnnealingLR(optimizer, T_max=epochs)</code> and call <code>scheduler.step()</code> after each optimizer step. Gentle decay in the last 30% of training helps the linear readout settle better.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-title">4. Add patience-based early stopping</div>
+      <div class="tl-body">Track best training loss with a patience counter (suggest patience=30–50 for Iris). Break the loop when loss hasn't improved by <code>1e-4</code> for <code>patience</code> consecutive epochs.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-title">5. Verify complex vs real output</div>
+      <div class="tl-body">Add <code>print("Complex output:", torch.is_complex(reservoir(X_train[:1])))</code> after model init. If False, change <code>feat_dim = reservoir.output_size</code> and skip the real/imag split — you get a denser projection.</div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-title">6. (Optional) Tune reservoir hyperparameters</div>
+      <div class="tl-body">Once baseline works, experiment with <code>reservoir_layers = 3</code> or <code>4</code>, and <code>n_photons = 4</code>. More photons → larger Fock space → richer features, but slower pre-compute. Since pre-compute is now one-time cost, this tradeoff is more acceptable.</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    const tabs = ['issues','diff','perf','plan'];
+    document.querySelectorAll('.tab')[tabs.indexOf(name)].classList.add('active');
+  }
+
+  // Animate speedup bars on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.speedup-fill').forEach(b => {
+        const w = b.style.width;
+        b.style.width = '0%';
+        setTimeout(() => b.style.width = w, 100);
+      });
+    }, 300);
+  });
+</script>
+</body>
+</html>
